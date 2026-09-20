@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banking Multi-Agent System - Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 32px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+  .architecture {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .layer {
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+  }
+  .layer-label {
+    position: absolute;
+    top: -12px;
+    left: 24px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 4px 14px;
+    border-radius: 20px;
+  }
+  .boxes {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .box {
+    border-radius: 12px;
+    padding: 18px 22px;
+    min-width: 160px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .box-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .box-detail {
+    font-size: 11px;
+    opacity: 0.75;
+    line-height: 1.4;
+  }
+  .box-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  /* Layer: Client */
+  .layer-client { background: linear-gradient(135deg, #1e293b 0%, #1a2332 100%); border: 1px solid #334155; }
+  .layer-client .layer-label { background: #3b82f6; color: #fff; }
+  .client-box { background: #1e3a5f; border: 1px solid #2563eb; }
+  .client-box .box-title { color: #93c5fd; }
+
+  /* Layer: API */
+  .layer-api { background: linear-gradient(135deg, #1e293b 0%, #1f2937 100%); border: 1px solid #334155; }
+  .layer-api .layer-label { background: #8b5cf6; color: #fff; }
+  .api-box { background: #2d1f5e; border: 1px solid #7c3aed; }
+  .api-box .box-title { color: #c4b5fd; }
+
+  /* Layer: Security */
+  .layer-security { background: linear-gradient(135deg, #1e293b 0%, #1c2127 100%); border: 1px solid #334155; }
+  .layer-security .layer-label { background: #ef4444; color: #fff; }
+  .security-box { background: #3b1c1c; border: 1px solid #dc2626; }
+  .security-box .box-title { color: #fca5a5; }
+
+  /* Layer: Agents */
+  .layer-agents { background: linear-gradient(135deg, #1e293b 0%, #1a2b1e 100%); border: 1px solid #334155; }
+  .layer-agents .layer-label { background: #22c55e; color: #fff; }
+  .agent-box { background: #1a3a2a; border: 1px solid #16a34a; }
+  .agent-box .box-title { color: #86efac; }
+  .coordinator-box { background: #1a3a2a; border: 2px solid #22c55e; min-width: 220px; }
+  .coordinator-box .box-title { color: #4ade80; font-size: 15px; }
+
+  /* Layer: LLM */
+  .layer-llm { background: linear-gradient(135deg, #1e293b 0%, #2d2316 100%); border: 1px solid #334155; }
+  .layer-llm .layer-label { background: #f59e0b; color: #1e293b; }
+  .llm-box { background: #3d2e0a; border: 1px solid #d97706; }
+  .llm-box .box-title { color: #fcd34d; }
+
+  /* Layer: Tools */
+  .layer-tools { background: linear-gradient(135deg, #1e293b 0%, #1e2a35 100%); border: 1px solid #334155; }
+  .layer-tools .layer-label { background: #06b6d4; color: #fff; }
+  .tool-box { background: #0c2d3d; border: 1px solid #0891b2; }
+  .tool-box .box-title { color: #67e8f9; }
+
+  /* Layer: Database */
+  .layer-db { background: linear-gradient(135deg, #1e293b 0%, #2a1f35 100%); border: 1px solid #334155; }
+  .layer-db .layer-label { background: #ec4899; color: #fff; }
+  .db-box { background: #3b1838; border: 1px solid #db2777; }
+  .db-box .box-title { color: #f9a8d4; }
+
+  /* Arrows */
+  .arrow-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 28px;
+    position: relative;
+  }
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .arrow-line {
+    width: 2px;
+    height: 16px;
+    background: linear-gradient(180deg, #475569, #64748b);
+  }
+  .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #64748b;
+  }
+  .arrow-label {
+    font-size: 10px;
+    color: #64748b;
+    position: absolute;
+    right: 30%;
+    background: #0f172a;
+    padding: 0 8px;
+  }
+
+  /* Agent routing lines */
+  .routing {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 4px;
+  }
+  .routing-line {
+    height: 2px;
+    flex: 1;
+    max-width: 80px;
+    background: linear-gradient(90deg, transparent, #22c55e, transparent);
+  }
+  .routing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  /* Legend */
+  .legend {
+    max-width: 1100px;
+    margin: 32px auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+    border-radius: 12px;
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  .legend-title {
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* Flow description */
+  .flow-section {
+    max-width: 1100px;
+    margin: 32px auto 0;
+    padding: 24px;
+    border-radius: 12px;
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  .flow-section h3 {
+    font-size: 16px;
+    color: #e2e8f0;
+    margin-bottom: 16px;
+  }
+  .flow-step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  .step-num {
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-text {
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.6;
+    padding-top: 4px;
+  }
+  .step-text strong { color: #e2e8f0; }
+
+  /* Tech tags */
+  .tech-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <h1>Banking Multi-Agent System</h1>
+  <p class="subtitle">System Architecture Diagram &mdash; FastAPI + React + Groq LLM + Supabase PostgreSQL</p>
+
+  <div class="architecture">
+
+    <!-- CLIENT LAYER -->
+    <div class="layer layer-client">
+      <div class="layer-label">Client Layer</div>
+      <div class="boxes">
+        <div class="box client-box">
+          <div class="box-icon">&#x1F310;</div>
+          <div class="box-title">React Frontend</div>
+          <div class="box-detail">Vite + React SPA<br>Port 5174</div>
+          <div class="tech-tag">Vite + JSX</div>
+        </div>
+        <div class="box client-box">
+          <div class="box-icon">&#x1F511;</div>
+          <div class="box-title">Login Page</div>
+          <div class="box-detail">Email/Password Auth<br>JWT Token Storage</div>
+          <div class="tech-tag">localStorage</div>
+        </div>
+        <div class="box client-box">
+          <div class="box-icon">&#x1F4AC;</div>
+          <div class="box-title">Dashboard + Chat</div>
+          <div class="box-detail">Chat UI Component<br>Session-based Conversations</div>
+          <div class="tech-tag">POST /chat</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-container">
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+      <span class="arrow-label">HTTP / REST + JWT Bearer Token</span>
+    </div>
+
+    <!-- API GATEWAY LAYER -->
+    <div class="layer layer-api">
+      <div class="layer-label">API Gateway</div>
+      <div class="boxes">
+        <div class="box api-box">
+          <div class="box-icon">&#x26A1;</div>
+          <div class="box-title">FastAPI Server</div>
+          <div class="box-detail">Port 8000<br>CORS Middleware</div>
+          <div class="tech-tag">uvicorn + async</div>
+        </div>
+        <div class="box api-box">
+          <div class="box-title">POST /auth/register</div>
+          <div class="box-detail">User Registration</div>
+        </div>
+        <div class="box api-box">
+          <div class="box-title">POST /auth/login</div>
+          <div class="box-detail">JWT Token Issuance</div>
+        </div>
+        <div class="box api-box">
+          <div class="box-title">POST /chat</div>
+          <div class="box-detail">Main Chat Endpoint<br>Authenticated</div>
+        </div>
+        <div class="box api-box">
+          <div class="box-title">/accounts /transactions /loans</div>
+          <div class="box-detail">Direct CRUD Routes</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-container">
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+      <span class="arrow-label">Request Pipeline</span>
+    </div>
+
+    <!-- SECURITY LAYER -->
+    <div class="layer layer-security">
+      <div class="layer-label">Security &amp; Guardrails</div>
+      <div class="boxes">
+        <div class="box security-box">
+          <div class="box-icon">&#x1F6E1;</div>
+          <div class="box-title">JWT Authentication</div>
+          <div class="box-detail">HS256 Signing<br>30min Expiry<br>Role-based (RBAC)</div>
+          <div class="tech-tag">PyJWT</div>
+        </div>
+        <div class="box security-box">
+          <div class="box-icon">&#x1F637;</div>
+          <div class="box-title">PII Masking</div>
+          <div class="box-detail">Microsoft Presidio<br>+ Regex Fallback<br>Email, Phone, Cards</div>
+          <div class="tech-tag">presidio-analyzer</div>
+        </div>
+        <div class="box security-box">
+          <div class="box-icon">&#x2705;</div>
+          <div class="box-title">Input Validation</div>
+          <div class="box-detail">Length Check (1000 chars)<br>Empty Message Guard<br>Prompt Injection Defense</div>
+        </div>
+        <div class="box security-box">
+          <div class="box-icon">&#x1F4DD;</div>
+          <div class="box-title">Audit Logging</div>
+          <div class="box-detail">Every Agent Action<br>User + Resource Tracking<br>Status Recording</div>
+        </div>
+        <div class="box security-box">
+          <div class="box-icon">&#x1F512;</div>
+          <div class="box-title">Password Hashing</div>
+          <div class="box-detail">bcrypt Hashing<br>Secure Verification</div>
+          <div class="tech-tag">bcrypt</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-container">
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+      <span class="arrow-label">Sanitized User Message</span>
+    </div>
+
+    <!-- AGENT LAYER -->
+    <div class="layer layer-agents">
+      <div class="layer-label">AI Agent Layer</div>
+      <div class="boxes" style="flex-direction: column; align-items: center;">
+        <!-- Coordinator -->
+        <div class="box coordinator-box">
+          <div class="box-icon">&#x1F9E0;</div>
+          <div class="box-title">Coordinator Agent</div>
+          <div class="box-detail">Intent Classification<br>Routes to: ACCOUNT | TRANSACTION | LOAN</div>
+          <div class="tech-tag">Groq LLM</div>
+        </div>
+
+        <!-- Routing visual -->
+        <div style="display: flex; align-items: center; gap: 0; width: 100%; justify-content: center; margin: 8px 0;">
+          <div style="flex: 1; max-width: 200px; height: 2px; background: linear-gradient(90deg, transparent, #22c55e);"></div>
+          <div class="routing-dot"></div>
+          <div style="width: 2px; height: 30px; background: #22c55e;"></div>
+          <div class="routing-dot"></div>
+          <div style="flex: 1; max-width: 200px; height: 2px; background: linear-gradient(270deg, transparent, #22c55e);"></div>
+        </div>
+
+        <!-- Sub-agents -->
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
+          <div class="box agent-box" style="min-width: 200px;">
+            <div class="box-icon">&#x1F4B3;</div>
+            <div class="box-title">Account Agent</div>
+            <div class="box-detail">Balance Inquiry<br>Account Details<br>Account Status</div>
+            <div class="tech-tag">get_account_balance</div>
+          </div>
+          <div class="box agent-box" style="min-width: 200px;">
+            <div class="box-icon">&#x1F4B8;</div>
+            <div class="box-title">Transaction Agent</div>
+            <div class="box-detail">Recent Transactions<br>Transaction History<br>Transaction Details</div>
+            <div class="tech-tag">get_recent_transactions</div>
+            <div class="tech-tag">get_user_transactions</div>
+          </div>
+          <div class="box agent-box" style="min-width: 200px;">
+            <div class="box-icon">&#x1F3E6;</div>
+            <div class="box-title">Loan Agent</div>
+            <div class="box-detail">EMI Calculator<br>Loan Products<br>Eligibility Check<br>Loan Application</div>
+            <div class="tech-tag">5 tool functions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-container">
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+      <span class="arrow-label">Tool Calling (Function Calls)</span>
+    </div>
+
+    <!-- LLM LAYER -->
+    <div class="layer layer-llm">
+      <div class="layer-label">LLM Provider</div>
+      <div class="boxes">
+        <div class="box llm-box" style="min-width: 300px;">
+          <div class="box-icon">&#x1F916;</div>
+          <div class="box-title">Groq Cloud API</div>
+          <div class="box-detail">Model: openai/gpt-oss-120b<br>Function Calling / Tool Use<br>System Prompt + Security Rules</div>
+          <div class="tech-tag">groq Python SDK</div>
+        </div>
+        <div class="box llm-box">
+          <div class="box-title">Capabilities</div>
+          <div class="box-detail">Intent Classification<br>Tool Selection<br>Natural Language Response<br>Multi-turn Reasoning</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-container">
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+      <span class="arrow-label">SQL Queries via SQLAlchemy</span>
+    </div>
+
+    <!-- TOOLS / DATA ACCESS LAYER -->
+    <div class="layer layer-tools">
+      <div class="layer-label">Tool &amp; Data Access Layer</div>
+      <div class="boxes">
+        <div class="box tool-box">
+          <div class="box-title">Account Tools</div>
+          <div class="box-detail">get_account_balance</div>
+        </div>
+        <div class="box tool-box">
+          <div class="box-title">Transaction Tools</div>
+          <div class="box-detail">get_recent_transactions<br>get_user_transactions</div>
+        </div>
+        <div class="box tool-box">
+          <div class="box-title">Loan Tools</div>
+          <div class="box-detail">get_available_loan_products<br>calculate_loan_emi<br>get_user_loans<br>check_loan_eligibility<br>apply_for_loan</div>
+        </div>
+        <div class="box tool-box">
+          <div class="box-title">Memory Tools</div>
+          <div class="box-detail">save_memory<br>get_memory</div>
+        </div>
+        <div class="box tool-box">
+          <div class="box-title">Audit Tools</div>
+          <div class="box-detail">save_audit_log</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-container">
+      <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+      <span class="arrow-label">SQLAlchemy + Raw SQL</span>
+    </div>
+
+    <!-- DATABASE LAYER -->
+    <div class="layer layer-db">
+      <div class="layer-label">Database Layer</div>
+      <div class="boxes">
+        <div class="box db-box" style="min-width: 220px;">
+          <div class="box-icon">&#x1F418;</div>
+          <div class="box-title">Supabase PostgreSQL</div>
+          <div class="box-detail">Managed Cloud Database<br>Connection Pooling<br>pool_pre_ping=True</div>
+          <div class="tech-tag">SQLAlchemy Engine</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">users</div>
+          <div class="box-detail">Auth credentials<br>Role &amp; Status</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">customers</div>
+          <div class="box-detail">Profile info<br>Linked to users</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">accounts</div>
+          <div class="box-detail">Balance, Type<br>Account Number</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">transactions</div>
+          <div class="box-detail">From/To accounts<br>Amount &amp; Type</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">loans</div>
+          <div class="box-detail">Active loans<br>EMI &amp; Balance</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">loan_applications</div>
+          <div class="box-detail">Pending requests</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">conversation_memory</div>
+          <div class="box-detail">Chat history<br>Per session</div>
+        </div>
+        <div class="box db-box">
+          <div class="box-title">audit_logs</div>
+          <div class="box-detail">Agent actions<br>Compliance trail</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">Technology Stack</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6;"></div> React + Vite (Frontend)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6;"></div> FastAPI + Uvicorn (Backend)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div> Presidio + PyJWT + bcrypt (Security)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div> Groq LLM Agents (AI Layer)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#06b6d4;"></div> SQLAlchemy (Data Access)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ec4899;"></div> Supabase PostgreSQL (Database)</div>
+  </div>
+
+  <!-- Data Flow -->
+  <div class="flow-section">
+    <h3>Request Flow: User Chat Message</h3>
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-text"><strong>React Frontend</strong> sends POST /chat with message, account_id, session_id + JWT Bearer token</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-text"><strong>JWT Auth Middleware</strong> validates token, extracts user_id and role</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-text"><strong>Input Validation</strong> checks message length; <strong>PII Masking</strong> redacts emails, phones, card numbers via Presidio</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-text"><strong>Memory Tools</strong> save the user message and retrieve conversation history from PostgreSQL</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-text"><strong>Coordinator Agent</strong> sends sanitized message to Groq LLM, which classifies intent &rarr; returns ACCOUNT, TRANSACTION, or LOAN</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">6</div>
+      <div class="step-text"><strong>Specialized Agent</strong> (Account/Transaction/Loan) calls Groq LLM with tool definitions; LLM selects appropriate function calls</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">7</div>
+      <div class="step-text"><strong>Tool Functions</strong> execute SQL queries against Supabase PostgreSQL via SQLAlchemy, return structured data</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">8</div>
+      <div class="step-text"><strong>LLM generates</strong> natural language response from tool results; response saved to memory; <strong>Audit Log</strong> records the action</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">9</div>
+      <div class="step-text"><strong>Response</strong> returned to React frontend with agent name, response text, and memory message count</div>
+    </div>
+  </div>
+
+</body>
+</html>

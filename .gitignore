@@ -1,0 +1,32 @@
+# Environments & Secrets
+.env
+.env.local
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.oxlintrc.json
+
+# Database & SQLite
+*.db
+*.sqlite
+*.sqlite3
+chroma_db/
+
+# IDE & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

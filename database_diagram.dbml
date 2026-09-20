@@ -1,0 +1,91 @@
+// Banking Multi-Agent System - Database Schema
+// Paste this into https://dbdiagram.io to generate the diagram
+
+Table users {
+  user_id serial [pk, increment]
+  name varchar(255) [not null]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  role varchar(50) [default: 'CUSTOMER']
+  status varchar(50) [default: 'ACTIVE']
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table customers {
+  customer_id serial [pk, increment]
+  user_id int [ref: > users.user_id]
+  first_name varchar(100)
+  last_name varchar(100)
+  phone varchar(50)
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table accounts {
+  account_id serial [pk, increment]
+  customer_id int [ref: > customers.customer_id]
+  account_number varchar(50) [unique, not null]
+  account_type varchar(50) [not null]
+  balance decimal(15,2) [default: 0.00]
+  currency varchar(10) [default: 'USD']
+  status varchar(50) [default: 'ACTIVE']
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table transactions {
+  transaction_id serial [pk, increment]
+  from_account_id int [ref: > accounts.account_id]
+  to_account_id int [ref: > accounts.account_id]
+  amount decimal(15,2) [not null]
+  transaction_type varchar(50) [not null]
+  status varchar(50) [default: 'COMPLETED']
+  description text
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table conversation_memory {
+  memory_id serial [pk, increment]
+  user_id int [ref: > users.user_id]
+  session_id varchar(100) [not null]
+  role varchar(50) [not null]
+  message text [not null]
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table audit_logs {
+  log_id serial [pk, increment]
+  user_id int
+  agent_name varchar(100) [not null]
+  action varchar(100) [not null]
+  resource_type varchar(100)
+  resource_id int
+  status varchar(50) [not null]
+  details text
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table loans {
+  loan_id serial [pk, increment]
+  customer_id int [ref: > customers.customer_id]
+  loan_type varchar(50) [not null]
+  principal_amount decimal(15,2) [not null]
+  interest_rate decimal(5,2) [not null]
+  tenure_months int [not null]
+  monthly_emi decimal(15,2) [not null]
+  outstanding_balance decimal(15,2) [not null]
+  status varchar(50) [default: 'ACTIVE']
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table loan_applications {
+  application_id serial [pk, increment]
+  user_id int [ref: > users.user_id]
+  customer_id int [ref: > customers.customer_id]
+  loan_type varchar(50) [not null]
+  requested_amount decimal(15,2) [not null]
+  tenure_months int [not null]
+  interest_rate decimal(5,2) [not null]
+  estimated_emi decimal(15,2) [not null]
+  purpose text
+  status varchar(50) [default: 'PENDING']
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
